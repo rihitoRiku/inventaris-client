@@ -58,54 +58,43 @@ export default function Page() {
   });
 
   // Utility functions
-  const convertToCSV = (data) => {
-    if (!data || data.length === 0) return "";
+const convertToCSV = (data) => {
+  if (!data || data.length === 0) return "";
+  
+  const headers = 
+    Object.keys(data[0])
+      .filter(key => key !== '_id')
+      .join(',') + '\n';
+      
+  const rows = data.map(row => {
+    return Object.keys(row)
+      .filter(key => key !== '_id')
+      .map(key => row[key])
+      .join(',');
+  }).join('\n');
 
-    const headers =
-      Object.keys(data[0])
-        .filter((key) => key !== "_id")
-        .join(",") + "\n";
+  return headers + rows;
+};
 
-    const rows = data
-      .map((row) => {
-        return Object.keys(row)
-          .filter((key) => key !== "_id")
-          .map((key) => {
-            if (key === "TanggalMasuk") {
-              const date = new Date(row[key]);
-              return `"${date.getDate().toString().padStart(2, "0")}-${(
-                date.getMonth() + 1
-              )
-                .toString()
-                .padStart(2, "0")}-${date.getFullYear()}"`;
-            }
-            return `"${row[key]}"`;
-          })
-          .join(",");
-      })
-      .join("\n");
+const downloadCSV = (csvContent, filename = 'data.csv') => {
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
 
-    return headers + rows;
-  };
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  link.style.visibility = 'hidden';
 
-  const downloadCSV = (csvContent, filename = "data.csv") => {
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
 
-    link.setAttribute("href", url);
-    link.setAttribute("download", filename);
-    link.style.visibility = "hidden";
-
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const handleDownload = () => {
-    const csvData = convertToCSV(items);
-    downloadCSV(csvData, "inventaris.csv");
-  };
+const handleDownload = () => {
+  const csvData = convertToCSV(items);
+  downloadCSV(csvData, 'inventaris.csv');
+};
 
   useEffect(() => {
     if (typeof window !== "undefined") {
