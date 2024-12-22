@@ -17,18 +17,26 @@ export default function Modal({ isOpen, onClose, setLoading, addItem }) {
   const isFormValid =
     formData.NamaBarang.trim() &&
     formData.Kategori.trim() &&
-    formData.JumlahBarang > 0 &&
-    formData.HargaPerUnit > 0 &&
+    Number(formData.JumlahBarang) > 0 &&
+    Number(formData.HargaPerUnit) > 0 &&
     formData.TanggalMasuk.trim() &&
     !dateError;
 
   // Validate the date input
   const validateDate = (dateValue) => {
+    if (!dateValue) return "Tanggal masuk wajib diisi.";
+
     const today = new Date();
     const entryDate = new Date(dateValue);
 
-    if (!dateValue) return "Tanggal masuk wajib diisi.";
-    if (entryDate > today) return "Tanggal masuk tidak boleh lebih dari hari ini.";
+    // Normalize both dates to midnight to ignore time differences
+    today.setHours(0, 0, 0, 0);
+    entryDate.setHours(0, 0, 0, 0);
+
+    if (entryDate > today) {
+      return "Tanggal masuk tidak boleh lebih dari hari ini.";
+    }
+
     return "";
   };
 
@@ -44,7 +52,8 @@ export default function Modal({ isOpen, onClose, setLoading, addItem }) {
 
     // Validate date field in real-time
     if (id === "TanggalMasuk") {
-      setDateError(validateDate(value));
+      const error = validateDate(value);
+      setDateError(error);
     }
   };
 

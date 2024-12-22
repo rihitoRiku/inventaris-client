@@ -17,12 +17,19 @@ export default function Table({ data, setItems }) {
   };
 
   const validateDate = (dateValue) => {
+    if (!dateValue) return "Tanggal masuk wajib diisi.";
+
     const today = new Date();
     const entryDate = new Date(dateValue);
 
-    if (!dateValue) return "Tanggal masuk wajib diisi.";
-    if (entryDate > today)
+    // Normalize both dates to midnight to ignore time differences
+    today.setHours(0, 0, 0, 0);
+    entryDate.setHours(0, 0, 0, 0);
+
+    if (entryDate > today) {
       return "Tanggal masuk tidak boleh lebih dari hari ini.";
+    }
+
     return "";
   };
 
@@ -145,9 +152,9 @@ export default function Table({ data, setItems }) {
 
   return (
     <div className="w-full rounded-lg bg-white mt-8 lg:mt-12">
-      <div className="w-full rounded-lg max-h-[40rem] overflow-x-auto">
+      <div  data-aos="zoom-in" data-aos-delay="200" className="w-full rounded-lg max-h-[40rem] overflow-x-auto">
         {/* Table */}
-        <table data-aos="zoom-in" data-aos-delay="200" className="w-full font-sans text-sm text-left rtl:text-right text-gray-500 relative">
+        <table  className="w-full font-sans text-sm text-left rtl:text-right text-gray-500 relative">
           <thead className="text-sm text-gray-700 uppercase bg-gray-50 sticky top-0 z-20">
             <tr>
               <th className="px-6 py-4 whitespace-nowrap bg-gray-50 sticky top-0 left-0 z-30 max-w-44">
