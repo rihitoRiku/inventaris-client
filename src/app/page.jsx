@@ -1,52 +1,65 @@
 "use client";
-
-import React, { useState } from "react";
-import LoaderComponent from "./components/LoaderComponent";
+import React, { useState, useEffect } from "react";
+import { Loadercomponent, InlineLoader } from "./components/LoaderComponent";
 import Modal from "./components/Modal";
-import SearchBar from "./components/SearchBar";
 import Table from "./components/Table";
+import SearchBar from "./components/SearchBar";
 import { MdAddToPhotos } from "react-icons/md";
 
 export default function Page() {
   const [loading, setLoading] = useState(false);
+  const [tableLoad, setTableLoad] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [registerModal, setRegisterModal] = useState(false);
 
   const openRegisterModal = () => setRegisterModal(true);
   const closeRegisterModal = () => setRegisterModal(false);
 
-  const [data, setData] = useState([
-    {
-      NamaBarang: "First aid kit",
-      Kategori: "Peralatan",
-      JumlahBarang: 50,
-      HargaPerUnit: 100000,
-      HargaTotal: 5000000,
-      TanggalMasuk: "2024-02-01",
-    },
-    {
-      NamaBarang: "Meja kayu",
-      Kategori: "Furniture",
-      JumlahBarang: 10,
-      HargaPerUnit: 1000000,
-      HargaTotal: 10000000,
-      TanggalMasuk: "2024-03-01",
-    },
-  ]);
+  const [items, setItems] = useState([]);
 
-  const filteredData = data.filter((item) =>
+  const filteredData = items.filter((item) =>
     item.NamaBarang.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  useEffect(() => {
+    async function fetchItems() {
+      try {
+        setTableLoad(true);
+        const response = await fetch("/api/items");
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        const data = await response.json();
+        setItems(data);
+        setTableLoad(false);
+      } catch (error) {
+        console.error("Error fetching items:", error);
+        setTableLoad(false);
+      }
+    }
+
+    fetchItems();
+  }, []);
+
+  const addItem = (newItem) => {
+    setItems((prevItems) => [...prevItems, newItem]);
+  };
+
   return (
     <>
-      {loading && <LoaderComponent />}
+      {loading && <Loadercomponent />}
 
-      <Modal isOpen={registerModal} onClose={closeRegisterModal} />
+      <Modal
+        isOpen={registerModal}
+        onClose={closeRegisterModal}
+        setLoading={setLoading}
+        addItem={addItem}
+      />
 
       <div className="w-full min-h-screen">
         <div className="w-full px-4 flex justify-center">
           <div className="w-full max-w-screen-lg flex flex-col relative top-32">
+            {/* Header */}
             <div className="text-gray-900 text-center space-y-4 sm:space-y-6 lg:space-y-8">
               <h1
                 style={{ lineHeight: 1.1 }}
@@ -63,10 +76,11 @@ export default function Page() {
               </h3>
             </div>
 
+            {/* Toolbar */}
             <div className="flex justify-center items-center max-w-screen-lg w-full mx-auto font-nunito mt-20 rounded-lg">
               <button
                 onClick={openRegisterModal}
-                className="p-3 lg:p-4 relative flex justify-center items-center gap-2 text-gray-400 w-min text-nowrap me-2 ms-2"
+                className="p-3 lg:p-4 relative flex justify-center items-center gap-2 text-green-600 w-min text-nowrap me-2 ms-2"
               >
                 <MdAddToPhotos className="text-4xl" />
                 <span className="hidden lg:inline-block">Tambah Barang</span>
@@ -78,7 +92,20 @@ export default function Page() {
               />
             </div>
 
-            <Table data={filteredData} />
+            {/* Content */}
+            {!tableLoad ? (
+              filteredData.length > 0 ? (
+                <Table data={filteredData} setItems={setItems} />
+              ) : (
+                <p className="font-sans text-center text-xl mt-16 text-gray-500">
+                  Barang tidak ditemukan.
+                </p>
+              )
+            ) : (
+              <div className="text-center mt-8">
+                <InlineLoader />
+              </div>
+            )}
           </div>
         </div>
       </div>

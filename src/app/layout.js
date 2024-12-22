@@ -1,5 +1,6 @@
 import { Geist, Geist_Mono, Open_Sans, Nunito } from "next/font/google";
 import "./globals.css";
+import { Toaster } from "react-hot-toast";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -12,14 +13,14 @@ const geistMono = Geist_Mono({
 });
 
 const openSans = Open_Sans({
-  subsets: ['latin'],
-  weight: ['400', '600', '700'],
-  variable: '--font-open-sans',
+  subsets: ["latin"],
+  weight: ["400", "600", "700"],
+  variable: "--font-open-sans",
 });
 
 const nunito = Nunito({
-  subsets: ['latin'],
-  variable: '--font-nunito',
+  subsets: ["latin"],
+  variable: "--font-nunito",
 });
 
 export const metadata = {
@@ -33,6 +34,16 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${openSans.variable} ${nunito.variable} antialiased`}
       >
+        <Toaster
+          toastOptions={{
+            className: "font-sans",
+            style: {
+              fontSize: "14px",
+            },
+          }}
+          position="top-center"
+          reverseOrder={false}
+        />
         {children}
       </body>
     </html>

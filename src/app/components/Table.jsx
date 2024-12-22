@@ -1,44 +1,144 @@
 import React, { useState } from "react";
+import { showToast } from "./../components/Notification";
 import { MdEdit, MdDelete } from "react-icons/md";
+import { IoClose } from "react-icons/io5";
 
-export default function Table({ data, onEdit, onDelete }) {
+export default function Table({ data, setItems }) {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [dateError, setDateError] = useState("");
 
-  // Open the Edit Modal
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return `${String(date.getDate()).padStart(2, "0")}-${String(
+      date.getMonth() + 1
+    ).padStart(2, "0")}-${date.getFullYear()}`;
+  };
+
+  const validateDate = (dateValue) => {
+    const today = new Date();
+    const entryDate = new Date(dateValue);
+
+    if (!dateValue) return "Tanggal masuk wajib diisi.";
+    if (entryDate > today)
+      return "Tanggal masuk tidak boleh lebih dari hari ini.";
+    return "";
+  };
+
+  const isFormValid = () => {
+    return (
+      selectedItem &&
+      selectedItem.NamaBarang.trim() &&
+      selectedItem.Kategori.trim() &&
+      selectedItem.JumlahBarang > 0 &&
+      selectedItem.HargaPerUnit > 0 &&
+      selectedItem.TanggalMasuk.trim() &&
+      !validateDate(selectedItem.TanggalMasuk)
+    );
+  };
+
   const handleEditClick = (item) => {
-    setSelectedItem({ ...item }); // Clone the item to avoid directly mutating it
+    setSelectedItem({ ...item });
+    setDateError("");
     setEditModalOpen(true);
   };
 
-  // Open the Delete Modal
   const handleDeleteClick = (item) => {
     setSelectedItem(item);
     setDeleteModalOpen(true);
   };
 
-  // Close both modals
   const closeModals = () => {
     setEditModalOpen(false);
     setDeleteModalOpen(false);
     setSelectedItem(null);
+    setDateError("");
   };
 
-  const handleEditSubmit = (e) => {
+  const handleInputChange = (e) => {
+    const { id, value } = e.target;
+
+    setSelectedItem((prevData) => ({
+      ...prevData,
+      [id]: value,
+    }));
+
+    if (id === "TanggalMasuk") {
+      setDateError(validateDate(value));
+    }
+  };
+
+  const handleEditSubmit = async (e) => {
     e.preventDefault();
-    onEdit(selectedItem); // Call parent function for edit action
-    closeModals();
+
+    // Final validation before submission
+    const dateValidationError = validateDate(selectedItem.TanggalMasuk);
+    if (dateValidationError) {
+      setDateError(dateValidationError);
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/items", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(selectedItem),
+      });
+
+      if (response.ok) {
+        console.log("Item updated successfully!");
+        const updatedItems = data.map((item) =>
+          item._id === selectedItem._id ? selectedItem : item
+        );
+        setItems(updatedItems);
+        showToast("success", "Item updated successfully!");
+      } else {
+        console.error("Failed to update item.");
+        showToast("error", "Failed to update item.");
+      }
+    } catch (error) {
+      console.error("Error updating item:", error);
+      showToast("error", "An error occurred while updating the item.");
+    } finally {
+      closeModals();
+    }
   };
 
-  const handleDeleteConfirm = () => {
-    onDelete(selectedItem); // Call parent function for delete action
-    closeModals();
+  const handleDeleteConfirm = async () => {
+    try {
+      const response = await fetch("/api/items", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ _id: selectedItem._id }),
+      });
+
+      if (response.ok) {
+        console.log("Item deleted successfully!");
+        const updatedItems = data.filter(
+          (item) => item._id !== selectedItem._id
+        );
+        setItems(updatedItems);
+        showToast("success", "Item deleted successfully!");
+      } else {
+        console.error("Failed to delete item.");
+      }
+    } catch (error) {
+      console.error("Error deleting item:", error);
+      showToast("error", "An error occurred while deleting the item.");
+    } finally {
+      closeModals();
+    }
   };
 
   return (
     <div className="w-full rounded-lg bg-white border mt-8 lg:mt-12">
       <div className="w-full rounded-lg max-h-[40rem] overflow-x-auto">
+        {/* Table */}
         <table className="w-full font-sans text-sm text-left rtl:text-right text-gray-500 relative">
           <thead className="text-sm text-gray-700 uppercase bg-gray-50 sticky top-0 z-20">
             <tr>
@@ -73,14 +173,14 @@ export default function Table({ data, onEdit, onDelete }) {
                   {item.JumlahBarang}
                 </td>
                 <td className="px-4 py-4 whitespace-nowrap">
-                  Rp {item.HargaTotal.toLocaleString()}
+                  Rp {item.JumlahBarang * item.HargaPerUnit}
                 </td>
                 <td className="px-4 py-4 whitespace-nowrap text-center">
-                  {item.TanggalMasuk}
+                  {formatDate(item.TanggalMasuk)}
                 </td>
                 <td className="text-center whitespace-nowrap text-2xl">
                   <button
-                    className="px-4 py-4 text-gray-400 hover:underline"
+                    className="px-4 py-4 text-yellow-400 hover:underline"
                     onClick={() => handleEditClick(item)}
                   >
                     <MdEdit />
@@ -101,36 +201,39 @@ export default function Table({ data, onEdit, onDelete }) {
       {/* Edit Modal */}
       {editModalOpen && selectedItem && (
         <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center font-sans">
-          <div className="bg-white rounded-lg p-6 max-w-lg w-full">
-            <h3 className="text-xl font-semibold mb-4">Edit Barang</h3>
+          <div className="relative bg-white rounded-lg p-8 pt-12 max-w-md w-full">
+            <button
+              onClick={closeModals}
+              className="absolute top-4 right-4 text-6xl text-gray-500"
+            >
+              <IoClose />
+            </button>
+            <h3 className="text-2xl lg:text-3xl font-semibold mb-4">
+              Edit Barang
+            </h3>
             <form onSubmit={handleEditSubmit}>
-              {/* Nama Barang */}
               <div className="mb-4">
-                <label className="block text-lg font-medium mb-2">
+                <label className="block text-base font-medium mb-2">
                   Nama Barang
                 </label>
                 <input
                   type="text"
-                  className="border border-gray-300 text-gray-900 text-lg rounded-lg block w-full px-4 py-2"
+                  id="NamaBarang"
+                  className="border border-gray-300 text-gray-900 text-base rounded-lg block w-full px-4 py-2 focus:outline-none"
                   value={selectedItem.NamaBarang}
-                  onChange={(e) =>
-                    setSelectedItem({ ...selectedItem, NamaBarang: e.target.value })
-                  }
+                  onChange={handleInputChange}
                   required
                 />
               </div>
-
-              {/* Kategori Barang */}
               <div className="mb-4">
-                <label className="block text-lg font-medium mb-2">
+                <label className="block text-base font-medium mb-2">
                   Kategori Barang
                 </label>
                 <select
-                  className="border border-gray-300 text-gray-900 text-lg rounded-lg block w-full px-4 py-2"
+                  id="Kategori"
+                  className="border border-gray-300 text-gray-900 text-base rounded-lg block w-full px-4 py-2"
                   value={selectedItem.Kategori}
-                  onChange={(e) =>
-                    setSelectedItem({ ...selectedItem, Kategori: e.target.value })
-                  }
+                  onChange={handleInputChange}
                   required
                 >
                   <option value="" disabled>
@@ -142,70 +245,62 @@ export default function Table({ data, onEdit, onDelete }) {
                   <option value="Lainnya">Lainnya</option>
                 </select>
               </div>
-
-              {/* Jumlah Barang */}
               <div className="mb-4">
-                <label className="block text-lg font-medium mb-2">
+                <label className="block text-base font-medium mb-2">
                   Jumlah Barang
                 </label>
                 <input
                   type="number"
-                  className="border border-gray-300 text-gray-900 text-lg rounded-lg block w-full px-4 py-2"
+                  id="JumlahBarang"
+                  className="border border-gray-300 text-gray-900 text-base rounded-lg block w-full px-4 py-2 focus:outline-none"
                   value={selectedItem.JumlahBarang}
-                  onChange={(e) =>
-                    setSelectedItem({ ...selectedItem, JumlahBarang: e.target.value })
-                  }
+                  onChange={handleInputChange}
                   min="1"
                   required
                 />
               </div>
-
-              {/* Harga per Unit */}
               <div className="mb-4">
-                <label className="block text-lg font-medium mb-2">
+                <label className="block text-base font-medium mb-2">
                   Harga per Unit
                 </label>
                 <input
                   type="number"
-                  className="border border-gray-300 text-gray-900 text-lg rounded-lg block w-full px-4 py-2"
+                  id="HargaPerUnit"
+                  className="border border-gray-300 text-gray-900 text-base rounded-lg block w-full px-4 py-2 focus:outline-none"
                   value={selectedItem.HargaPerUnit}
-                  onChange={(e) =>
-                    setSelectedItem({ ...selectedItem, HargaPerUnit: e.target.value })
-                  }
+                  onChange={handleInputChange}
                   min="100"
                   required
                 />
               </div>
-
-              {/* Tanggal Masuk */}
               <div className="mb-4">
-                <label className="block text-lg font-medium mb-2">
+                <label className="block text-base font-medium mb-2">
                   Tanggal Masuk
                 </label>
                 <input
                   type="date"
-                  className="border border-gray-300 text-gray-900 text-lg rounded-lg block w-full px-4 py-2"
+                  id="TanggalMasuk"
+                  className={`border ${
+                    dateError ? "border-red-500" : "border-gray-300"
+                  } text-gray-900 text-base rounded-lg block w-full px-4 py-2 focus:outline-none`}
                   value={selectedItem.TanggalMasuk}
-                  onChange={(e) =>
-                    setSelectedItem({ ...selectedItem, TanggalMasuk: e.target.value })
-                  }
+                  onChange={handleInputChange}
                   required
                 />
+                {dateError && (
+                  <p className="text-red-500 text-sm mt-2">{dateError}</p>
+                )}
               </div>
-
               <button
                 type="submit"
-                className="bg-green-500 text-white px-6 py-2 rounded-lg w-full"
+                className={`bg-green-400 hover:bg-green-500 text-white mt-8 px-8 py-2.5 rounded-lg font-medium float-end ${
+                  isFormValid() ? "" : "opacity-50 cursor-not-allowed"
+                }`}
+                disabled={!isFormValid()}
               >
                 Simpan
               </button>
             </form>
-            <button
-              className="mt-4 bg-gray-500 text-white px-6 py-2 rounded-lg w-full"
-              onClick={closeModals}
-            >
-              Batal
-            </button>
           </div>
         </div>
       )}
@@ -219,18 +314,18 @@ export default function Table({ data, onEdit, onDelete }) {
               Apakah Anda yakin ingin menghapus barang{" "}
               <span className="font-semibold">{selectedItem.NamaBarang}</span>?
             </p>
-            <div className="flex justify-between">
+            <div className="flex justify-between gap-6">
               <button
-                className="bg-red-500 text-white px-6 py-2 rounded-lg"
-                onClick={handleDeleteConfirm}
-              >
-                Hapus
-              </button>
-              <button
-                className="bg-gray-500 text-white px-6 py-2 rounded-lg"
+                className="bg-gray-500 text-white px-8 py-2.5 rounded-lg flex-1"
                 onClick={closeModals}
               >
                 Batal
+              </button>
+              <button
+                className="bg-red-500 text-white px-8 py-2.5 rounded-lg flex-1"
+                onClick={handleDeleteConfirm}
+              >
+                Hapus
               </button>
             </div>
           </div>

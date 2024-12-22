@@ -1,27 +1,67 @@
 import React, { useState } from "react";
+import { showToast } from "./../components/Notification";
+import { IoClose } from "react-icons/io5";
 
-export default function Modal({ isOpen, onClose }) {
+export default function Modal({ isOpen, onClose, setLoading, addItem }) {
+  // State for form data and validation errors
   const [formData, setFormData] = useState({
-    namaBarang: "",
-    kategoriBarang: "",
-    jumlahBarang: 0,
-    hargaPerUnit: 0,
-    tanggalMasuk: "",
+    NamaBarang: "",
+    Kategori: "",
+    JumlahBarang: 1,
+    HargaPerUnit: 100000,
+    TanggalMasuk: "",
   });
+  const [dateError, setDateError] = useState("");
 
+  // Check if the form is valid
+  const isFormValid =
+    formData.NamaBarang.trim() &&
+    formData.Kategori.trim() &&
+    formData.JumlahBarang > 0 &&
+    formData.HargaPerUnit > 0 &&
+    formData.TanggalMasuk.trim() &&
+    !dateError;
+
+  // Validate the date input
+  const validateDate = (dateValue) => {
+    const today = new Date();
+    const entryDate = new Date(dateValue);
+
+    if (!dateValue) return "Tanggal masuk wajib diisi.";
+    if (entryDate > today) return "Tanggal masuk tidak boleh lebih dari hari ini.";
+    return "";
+  };
+
+  // Handle input changes
   const handleInputChange = (e) => {
     const { id, value } = e.target;
+
+    // Update form data
     setFormData((prevData) => ({
       ...prevData,
       [id]: value,
     }));
+
+    // Validate date field in real-time
+    if (id === "TanggalMasuk") {
+      setDateError(validateDate(value));
+    }
   };
 
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Perform final validation
+    const dateValidationError = validateDate(formData.TanggalMasuk);
+    if (dateValidationError) {
+      setDateError(dateValidationError);
+      return;
+    }
+
+    setLoading(true);
     try {
-      const response = await fetch("/api/add-item", {
+      const response = await fetch("/api/items", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -30,52 +70,65 @@ export default function Modal({ isOpen, onClose }) {
       });
 
       if (response.ok) {
-        console.log("Item added successfully!");
+        const newItem = await response.json();
+        addItem(newItem);
+        showToast("success", "Item added successfully!");
+
+        // Reset form data
         setFormData({
-          namaBarang: "",
-          kategoriBarang: "",
-          jumlahBarang: 0,
-          hargaPerUnit: 0,
-          tanggalMasuk: "",
+          NamaBarang: "",
+          Kategori: "",
+          JumlahBarang: 1,
+          HargaPerUnit: 100000,
+          TanggalMasuk: "",
         });
-        onClose(); // Close the modal after successful submission
       } else {
-        console.error("Failed to add item");
+        showToast("error", "Failed to add item.");
+        console.error("Failed to add item.");
       }
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Error adding item:", error);
+    } finally {
+      setLoading(false);
+      onClose();
     }
   };
 
+  // Do not render if modal is not open
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center font-sans">
-      <div className="relative bg-white rounded-xl p-6 max-w-md w-full">
+      <div className="relative bg-white rounded-xl p-8 pt-12 max-w-md w-full">
+        {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-2xl text-gray-500"
+          className="absolute top-4 right-4 text-6xl text-gray-500"
         >
-          &times;
+          <IoClose />
         </button>
+
+        {/* Modal Title */}
         <h3 className="text-2xl lg:text-3xl font-semibold mb-4">
           Tambah Barang
         </h3>
+
+        {/* Form */}
         <form onSubmit={handleSubmit}>
           {/* Nama Barang */}
           <div className="mb-4">
             <label
-              htmlFor="namaBarang"
-              className="block mb-2 text-lg font-medium text-gray-900"
+              htmlFor="NamaBarang"
+              className="block mb-2 text-base font-medium text-gray-900"
             >
               Nama Barang <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
-              id="namaBarang"
-              value={formData.namaBarang}
+              id="NamaBarang"
+              value={formData.NamaBarang}
               onChange={handleInputChange}
-              className="border border-gray-300 text-gray-900 text-lg rounded-lg block w-full px-4 py-2"
+              className="border border-gray-300 text-gray-900 text-base rounded-lg block w-full px-4 py-2 focus:outline-none"
               placeholder="Nama Barang"
               required
             />
@@ -84,16 +137,16 @@ export default function Modal({ isOpen, onClose }) {
           {/* Kategori Barang */}
           <div className="mb-4">
             <label
-              htmlFor="kategoriBarang"
-              className="block mb-2 text-lg font-medium text-gray-900"
+              htmlFor="Kategori"
+              className="block mb-2 text-base font-medium text-gray-900"
             >
               Kategori Barang
             </label>
             <select
-              id="kategoriBarang"
-              value={formData.kategoriBarang}
+              id="Kategori"
+              value={formData.Kategori}
               onChange={handleInputChange}
-              className="border border-gray-300 text-gray-900 text-lg rounded-lg block w-full px-4 py-2"
+              className="border border-gray-300 text-gray-900 text-base rounded-lg block w-full px-4 py-2 focus:outline-none"
               required
             >
               <option value="" disabled>
@@ -109,17 +162,17 @@ export default function Modal({ isOpen, onClose }) {
           {/* Jumlah Barang */}
           <div className="mb-4">
             <label
-              htmlFor="jumlahBarang"
-              className="block mb-2 text-lg font-medium text-gray-900"
+              htmlFor="JumlahBarang"
+              className="block mb-2 text-base font-medium text-gray-900"
             >
               Jumlah Barang <span className="text-red-500">*</span>
             </label>
             <input
               type="number"
-              id="jumlahBarang"
-              value={formData.jumlahBarang}
+              id="JumlahBarang"
+              value={formData.JumlahBarang}
               onChange={handleInputChange}
-              className="border border-gray-300 text-gray-900 text-lg rounded-lg block w-full px-4 py-2"
+              className="border border-gray-300 text-gray-900 text-base rounded-lg block w-full px-4 py-2 focus:outline-none"
               placeholder="Jumlah Barang"
               min="1"
               required
@@ -129,17 +182,17 @@ export default function Modal({ isOpen, onClose }) {
           {/* Harga per Unit */}
           <div className="mb-4">
             <label
-              htmlFor="hargaPerUnit"
-              className="block mb-2 text-lg font-medium text-gray-900"
+              htmlFor="HargaPerUnit"
+              className="block mb-2 text-base font-medium text-gray-900"
             >
               Harga per Unit <span className="text-red-500">*</span>
             </label>
             <input
               type="number"
-              id="hargaPerUnit"
-              value={formData.hargaPerUnit}
+              id="HargaPerUnit"
+              value={formData.HargaPerUnit}
               onChange={handleInputChange}
-              className="border border-gray-300 text-gray-900 text-lg rounded-lg block w-full px-4 py-2"
+              className="border border-gray-300 text-gray-900 text-base rounded-lg block w-full px-4 py-2 focus:outline-none"
               placeholder="Harga per Unit (Rp)"
               min="100"
               required
@@ -149,27 +202,35 @@ export default function Modal({ isOpen, onClose }) {
           {/* Tanggal Masuk */}
           <div className="mb-4">
             <label
-              htmlFor="tanggalMasuk"
-              className="block mb-2 text-lg font-medium text-gray-900"
+              htmlFor="TanggalMasuk"
+              className="block mb-2 text-base font-medium text-gray-900"
             >
               Tanggal Masuk <span className="text-red-500">*</span>
             </label>
             <input
               type="date"
-              id="tanggalMasuk"
-              value={formData.tanggalMasuk}
+              id="TanggalMasuk"
+              value={formData.TanggalMasuk}
               onChange={handleInputChange}
-              className="border border-gray-300 text-gray-900 text-lg rounded-lg block w-full px-4 py-2"
+              className={`border ${
+                dateError ? "border-red-500" : "border-gray-300"
+              } text-gray-900 text-base rounded-lg block w-full px-4 py-2 focus:outline-none`}
               required
             />
+            {dateError && (
+              <p className="text-red-500 text-sm mt-2">{dateError}</p>
+            )}
           </div>
 
           {/* Submit Button */}
           <button
             type="submit"
-            className="bg-green-500 text-white px-6 py-2 rounded-lg text-lg font-medium w-full"
+            className={`bg-green-400 hover:bg-green-500 text-white mt-8 px-6 py-2.5 rounded-lg font-medium float-end ${
+              isFormValid ? "" : "opacity-50 cursor-not-allowed"
+            }`}
+            disabled={!isFormValid}
           >
-            Tambah Barang
+            Tambahkan!
           </button>
         </form>
       </div>
