@@ -1,5 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import AOS from "aos";
+import "aos/dist/aos.css";
 import { Loadercomponent, InlineLoader } from "./components/LoaderComponent";
 import Modal from "./components/Modal";
 import Table from "./components/Table";
@@ -10,10 +12,10 @@ export default function Page() {
   const [loading, setLoading] = useState(false);
   const [tableLoad, setTableLoad] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [registerModal, setRegisterModal] = useState(false);
+  const [addItemModal, setAddItemModal] = useState(false);
 
-  const openRegisterModal = () => setRegisterModal(true);
-  const closeRegisterModal = () => setRegisterModal(false);
+  const openAddItemModal = () => setAddItemModal(true);
+  const closeAddItemModal = () => setAddItemModal(false);
 
   const [items, setItems] = useState([]);
 
@@ -22,6 +24,10 @@ export default function Page() {
   );
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      AOS.init({ once: false, mirror: false });
+      AOS.refresh();
+    }
     async function fetchItems() {
       try {
         setTableLoad(true);
@@ -50,8 +56,8 @@ export default function Page() {
       {loading && <Loadercomponent />}
 
       <Modal
-        isOpen={registerModal}
-        onClose={closeRegisterModal}
+        isOpen={addItemModal}
+        onClose={closeAddItemModal}
         setLoading={setLoading}
         addItem={addItem}
       />
@@ -60,7 +66,11 @@ export default function Page() {
         <div className="w-full px-4 flex justify-center">
           <div className="w-full max-w-screen-lg flex flex-col relative top-32">
             {/* Header */}
-            <div className="text-gray-900 text-center space-y-4 sm:space-y-6 lg:space-y-8">
+            <div
+              data-aos="zoom-in"
+              data-aos-delay="50"
+              className="text-gray-900 text-center space-y-4 sm:space-y-6 lg:space-y-8"
+            >
               <h1
                 style={{ lineHeight: 1.1 }}
                 className="text-4xl sm:text-5xl lg:text-7xl font-semibold font-sans"
@@ -79,7 +89,9 @@ export default function Page() {
             {/* Toolbar */}
             <div className="flex justify-center items-center max-w-screen-lg w-full mx-auto font-nunito mt-20 rounded-lg">
               <button
-                onClick={openRegisterModal}
+                data-aos="zoom-in"
+                data-aos-delay="100"
+                onClick={openAddItemModal}
                 className="p-3 lg:p-4 relative flex justify-center items-center gap-2 text-green-600 w-min text-nowrap me-2 ms-2"
               >
                 <MdAddToPhotos className="text-4xl" />
@@ -106,6 +118,17 @@ export default function Page() {
                 <InlineLoader />
               </div>
             )}
+
+            {/* About */}
+            <div className="mb-16 mt-12 font-sans text-center">
+              {/* Aplikasi ini diselesaikan kurang dari satu hari oleh Muhammad Rafi
+              Shidiq menggunakan React Next.js, MongoDB, dan Tailwind CSS.
+              Desainnya sederhana dan user-friendly, dilengkapi validasi form
+              untuk keamanan sesuai spesifikasi. Dengan clean code dan minim
+              resorce, aplikasi ini cepat, efisien, dan ringan. Sayang saya
+              tidak memilih mengerjakan case ke-2 karena keterbatasan waktu
+              sambil mengerjakan projek lain. */}
+            </div>
           </div>
         </div>
       </div>

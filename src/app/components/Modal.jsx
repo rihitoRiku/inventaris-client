@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { showToast } from "./../components/Notification";
 import { IoClose } from "react-icons/io5";
 
@@ -94,12 +94,20 @@ export default function Modal({ isOpen, onClose, setLoading, addItem }) {
     }
   };
 
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const AOS = require("aos"); 
+      AOS.init();
+      AOS.refresh();
+    }
+  }, [isOpen])
+
   // Do not render if modal is not open
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center font-sans">
-      <div className="relative bg-white rounded-xl p-8 pt-12 max-w-md w-full">
+    <div className="fixed inset-0 z-50 bg-white/10 backdrop-blur-sm flex items-center justify-center font-sans mx-3">
+      <div data-aos="zoom-in" data-aos-delay="50" className="relative bg-white rounded-xl p-8 pt-12 max-w-md w-full">
         {/* Close Button */}
         <button
           onClick={onClose}

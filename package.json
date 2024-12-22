@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@next/env": "^15.1.2",
+    "aos": "^2.3.4",
     "mongodb": "^6.12.0",
     "next": "15.1.2",
     "react": "^19.0.0",
