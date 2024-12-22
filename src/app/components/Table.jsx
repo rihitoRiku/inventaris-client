@@ -3,7 +3,7 @@ import { showToast } from "./../components/Notification";
 import { MdEdit, MdDelete } from "react-icons/md";
 import { IoClose } from "react-icons/io5";
 
-export default function Table({ data, setItems }) {
+export default function Table({ data, setItems, setLoading }) {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
@@ -86,6 +86,7 @@ export default function Table({ data, setItems }) {
       return;
     }
 
+    setLoading(true);
     try {
       const response = await fetch("/api/items", {
         method: "PUT",
@@ -111,10 +112,12 @@ export default function Table({ data, setItems }) {
       showToast("error", "An error occurred while updating the item.");
     } finally {
       closeModals();
+      setLoading(false);
     }
   };
 
   const handleDeleteConfirm = async () => {
+    setLoading(true);
     try {
       const response = await fetch("/api/items", {
         method: "DELETE",
@@ -139,22 +142,27 @@ export default function Table({ data, setItems }) {
       showToast("error", "An error occurred while deleting the item.");
     } finally {
       closeModals();
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const AOS = require("aos"); 
+      const AOS = require("aos");
       AOS.init();
       AOS.refresh();
     }
-  }, [])
+  }, []);
 
   return (
     <div className="w-full rounded-lg bg-white mt-8 lg:mt-12">
-      <div  data-aos="zoom-in" data-aos-delay="200" className="w-full rounded-lg max-h-[40rem] overflow-x-auto">
+      <div
+        data-aos="zoom-in"
+        data-aos-delay="200"
+        className="w-full rounded-lg max-h-[40rem] overflow-x-auto"
+      >
         {/* Table */}
-        <table  className="w-full font-sans text-sm text-left rtl:text-right text-gray-500 relative">
+        <table className="w-full font-sans text-sm text-left rtl:text-right text-gray-500 relative">
           <thead className="text-sm text-gray-700 uppercase bg-gray-50 sticky top-0 z-20">
             <tr>
               <th className="px-6 py-4 whitespace-nowrap bg-gray-50 sticky top-0 left-0 z-30 max-w-44">
@@ -216,7 +224,11 @@ export default function Table({ data, setItems }) {
       {/* Edit Modal */}
       {editModalOpen && selectedItem && (
         <div className="fixed inset-0 z-50 bg-white/10 backdrop-blur-sm flex items-center justify-center font-sans mx-3">
-          <div data-aos="zoom-in" data-aos-delay="50" className="relative bg-white rounded-lg p-8 pt-12 max-w-md w-full">
+          <div
+            data-aos="zoom-in"
+            data-aos-delay="50"
+            className="relative bg-white rounded-lg p-8 pt-12 max-w-md w-full"
+          >
             <button
               onClick={closeModals}
               className="absolute top-4 right-4 text-6xl text-gray-500"
@@ -323,7 +335,11 @@ export default function Table({ data, setItems }) {
       {/* Delete Modal */}
       {deleteModalOpen && selectedItem && (
         <div className="fixed inset-0 z-50 bg-white/10 backdrop-blur-sm flex items-center justify-center font-sans mx-3">
-          <div data-aos="zoom-in" data-aos-delay="50" className="bg-white rounded-lg p-6 max-w-sm w-full">
+          <div
+            data-aos="zoom-in"
+            data-aos-delay="50"
+            className="bg-white rounded-lg p-6 max-w-sm w-full"
+          >
             <h3 className="text-xl font-semibold mb-4">Hapus Barang</h3>
             <p className="text-gray-700 mb-6">
               Apakah Anda yakin ingin menghapus barang{" "}

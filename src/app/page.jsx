@@ -214,7 +214,6 @@ export default function Page() {
             </div>
 
             {/* Filter Container */}
-            {/* Filter Container */}
             {showFilter && (
               <div className="font-sans border mt-4 bg-white p-6 rounded-lg shadow-md">
                 <div className="flex flex-wrap gap-4 justify-between items-start">
@@ -300,7 +299,7 @@ export default function Page() {
             {/* Content */}
             {!tableLoad ? (
               filteredData.length > 0 ? (
-                <Table data={filteredData} setItems={setItems} />
+                <Table data={filteredData} setItems={setItems} setLoading={setLoading} />
               ) : (
                 <p className="font-sans text-center text-xl mt-16 text-gray-500">
                   Barang tidak ditemukan.
