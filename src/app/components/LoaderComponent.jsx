@@ -1,5 +1,5 @@
 import React from "react";
-import Loaderstyle from "./style.module.scss";
+import Loaderstyle from "./../styles/LoaderStyle.module.scss";
 
 export default function Loadercomponent() {
   return (
